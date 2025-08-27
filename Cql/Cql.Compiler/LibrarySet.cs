@@ -20,7 +20,7 @@ namespace Hl7.Cql.Compiler;
 /// Contains a set of libraries ordered topologically.
 /// </summary>
 [DebuggerDisplay("LibrarySet {Name}")]
-internal class LibrarySet : IReadOnlyCollection<Library> //, IReadOnlyDictionary<string, Library>
+public class LibrarySet : IReadOnlyCollection<Library> //, IReadOnlyDictionary<string, Library>
 {
     /// <summary>
     /// The name of this library set. An example could be the directory name containing the libraries.

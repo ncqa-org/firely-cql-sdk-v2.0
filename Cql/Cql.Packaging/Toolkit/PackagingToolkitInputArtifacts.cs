@@ -39,6 +39,6 @@ public readonly record struct PackagingToolkitInputArtifacts
     /// </summary>
     /// <returns>A <see cref="ResourcePackager.InputArtifacts"/> object containing the CQL library, ELM library,  C# source code,
     /// assembly binary, and debug symbols binary from the current instance.</returns>
-    internal ResourcePackager.InputArtifacts ToResourcePackagerInputArtifacts() =>
+    public ResourcePackager.InputArtifacts ToResourcePackagerInputArtifacts() =>
         new(CqlLibrary, ElmLibrary, CSharpSourceCode, AssemblyBinary, DebugSymbolsBinary);
 }

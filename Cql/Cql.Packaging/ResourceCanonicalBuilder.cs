@@ -8,7 +8,7 @@
 
 namespace Hl7.Cql.Packaging;
 
-internal delegate string ResourceCanonicalBuilder(
+public delegate string ResourceCanonicalBuilder(
     string resourceType,
     string identifier,
     string? version = null);

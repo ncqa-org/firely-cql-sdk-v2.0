@@ -42,8 +42,8 @@ public sealed class PackagingToolkit : IToolkit<PackagingToolkit>
         _services = PackagingToolkitServices.Create(loggerFactory, config);
     }
 
-    private PackagingToolkitArtifactsById _artifactsById;
-    private readonly PackagingToolkitServices _services;
+    public PackagingToolkitArtifactsById _artifactsById;
+    public readonly PackagingToolkitServices _services;
 
     /// <inheritdoc />
     [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -81,7 +81,7 @@ public sealed class PackagingToolkit : IToolkit<PackagingToolkit>
     /// <summary>
     /// Replaces the current collection of artifacts with the specified collection, identified by their IDs.
     /// </summary>
-    private void ReplaceArtifactsById(PackagingToolkitArtifactsById artifactsById) =>
+    public void ReplaceArtifactsById(PackagingToolkitArtifactsById artifactsById) =>
         _artifactsById = artifactsById;
 
     /// <summary>

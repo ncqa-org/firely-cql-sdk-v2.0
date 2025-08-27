@@ -15,7 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Hl7.Cql.Packaging.Toolkit.Internal;
 
-internal readonly record struct PackagingToolkitServices(
+public readonly record struct PackagingToolkitServices(
     ServiceProvider ServiceProvider,
     ILogger<PackagingToolkit> Logger,
     ResourcePackager ResourcePackager)
