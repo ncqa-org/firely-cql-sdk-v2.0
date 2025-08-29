@@ -15,7 +15,7 @@ using Hl7.Fhir.Model;
 
 namespace Hl7.Cql.Packaging;
 
-public class ResourcePackager(
+internal class ResourcePackager(
     ILoggerFactory loggerFactory,
     TypeResolver typeResolver,
     ResourceCanonicalBuilder resourceCanonicalBuilder)
@@ -160,25 +160,9 @@ file static class MeasurePackager
     private static readonly Dictionary<string, string> Populations = new()
     {
         { "initial-population", "Initial Population" },
-        { "initial-population-commercial", "Initial Population Commercial" },
-        { "initial-population-exchange", "Initial Population Exchange" },
-        { "initial-population-medicare", "Initial Population Medicare" },
-        { "initial-population-medicaid", "Initial Population Medicaid" },
-        { "denominator", "Denominator" },
-        { "denominator-commercial", "Denominator Commercial" },
-        { "denominator-exchange", "Denominator Exchange" },
-        { "denominator-medicare", "Denominator Medicare" },
-        { "denominator-medicaid", "Denominator Medicaid" },
-        { "denominator-exclusion", "Denominator Exclusion" },
-        { "denominator-exclusion-commercial", "Denominator Exclusion Commercial" },
-        { "denominator-exclusion-exchange", "Denominator Exclusion Exchange" },
-        { "denominator-exclusion-medicare", "Denominator Exclusion Medicare" },
-        { "denominator-exclusion-medicaid", "Denominator Exclusion Medicaid" },
         { "numerator", "Numerator" },
-        { "numerator-commercial", "Numerator Commercial" },
-        { "numerator-exchange", "Numerator Exchange" },
-        { "numerator-medicare", "Numerator Medicare" },
-        { "numerator-medicaid", "Numerator Medicaid" }
+        { "denominator", "Denominator" },
+        { "denominator-exclusion", "Denominator Exclusion" }
     };
 
     private static void AnnotateMeasurePopulations(Measure measure, ElmLibrary library)

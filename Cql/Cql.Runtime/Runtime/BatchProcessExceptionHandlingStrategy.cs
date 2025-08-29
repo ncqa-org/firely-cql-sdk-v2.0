@@ -8,6 +8,6 @@
 
 namespace Hl7.Cql.Runtime;
 
-public readonly record struct BatchProcessExceptionHandlingStrategy<T>(
+internal readonly record struct BatchProcessExceptionHandlingStrategy<T>(
     BatchProcessExceptionContinuation ExceptionContinuation = BatchProcessExceptionContinuation.Throw,
     BatchProcessExceptionHandler<T>? ExceptionHandler = null);

@@ -8,7 +8,7 @@
 
 namespace Hl7.Cql.Abstractions.Infrastructure;
 
-public static class EnumerableExtensions
+internal static class EnumerableExtensions
 {
     /// <summary>
     /// Performs the specified action on each element of the collection.
