@@ -10,7 +10,6 @@ using Hl7.Cql.Compiler.Expressions;
 using Hl7.Cql.Abstractions.Infrastructure;
 using Hl7.Cql.Compiler;
 using Hl7.Cql.Runtime;
-using Hl7.Cql.Elm;
 
 namespace Hl7.Cql.CodeGeneration.NET
 {
@@ -531,8 +530,8 @@ namespace Hl7.Cql.CodeGeneration.NET
             }).ToList();
 
             // inserts the context parameter in the start of the lambda expression
-            //if (Indent == 0)
-                //parameters.Insert(0, "CqlContext context");
+            if (Indent == 0)
+                parameters.Insert(0, "CqlContext context");
 
             var lambdaParameters = $"({string.Join(", ", parameters)})";
             lambdaSb.Append(lambdaParameters);
@@ -576,10 +575,8 @@ namespace Hl7.Cql.CodeGeneration.NET
             LambdaExpression function,
             string name,
             string specifiers,
-            Library library,
             IReadOnlyDictionary<string, string>? originalParameterNames = null)
         {
-            Console.WriteLine($"TEST:: Processing function {library}...");
             var funcSb = new StringBuilder();
 
             funcSb.Append(specifiers + " ");

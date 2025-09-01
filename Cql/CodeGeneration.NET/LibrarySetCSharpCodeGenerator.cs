@@ -122,7 +122,7 @@ internal partial class LibrarySetCSharpCodeGenerator
 
                         using var cSharpWriter = new StringWriter();
                         var libraryWriter = new LibraryWriter(this, library, cSharpWriter);
-                        libraryWriter.WriteLibraryFile(library);
+                        libraryWriter.WriteLibraryFile();
                         cSharpWriter.Flush();
                         var cSharp = cSharpWriter.ToString();
                         return (library, cSharp);
@@ -151,11 +151,11 @@ internal partial class LibrarySetCSharpCodeGenerator
             return this with { IndentedTextWriter = IndentedTextWriter.AddIndent(addIndent) };
         }
 
-        public void WriteLibraryFile(Library library)
+        public void WriteLibraryFile()
         {
             WriteUsings();
             WriteNamespaceFileScope();
-            WriteClass(library);
+            WriteClass();
         }
 
         private void WriteCqlTupleMetadataProperties()
@@ -256,7 +256,7 @@ internal partial class LibrarySetCSharpCodeGenerator
                       .OfType<CqlCodeDefinition>()
                       .ToArray());
 
-        private void WriteMethods(Library library)
+        private void WriteMethods()
         {
             string lastDefinitionRegion = "";
 
@@ -295,7 +295,7 @@ internal partial class LibrarySetCSharpCodeGenerator
                 lastDefinitionRegion = definitionRegion;
 
                 var methodWriter = new DefinitionWriter(this, definition);
-                methodWriter.WriteDefinition(library);
+                methodWriter.WriteDefinition();
                 IndentedTextWriter.WriteLine();
             }
 
@@ -308,7 +308,7 @@ internal partial class LibrarySetCSharpCodeGenerator
             }
         }
 
-        private void WriteClass(Library library)
+        private void WriteClass()
         {
             IndentedTextWriter.WriteLine(
                 $"[System.CodeDom.Compiler.GeneratedCode({GeneratorToolName.QuoteString()}, {GeneratorToolVersion.QuoteString()})]");
@@ -319,77 +319,34 @@ internal partial class LibrarySetCSharpCodeGenerator
                     : $"[CqlLibrary({LibraryVersionedIdentifier.Identifier.ToString().QuoteString()})]");
 
             IndentedTextWriter.WriteLine($$"""
-                                           public partial class {{ClassName}} : ILibrary
+                                           public partial class {{ClassName}} : ILibrary, ISingleton<{{ClassName}}>
                                            {
                                            """);
             {
                 var classBlockContext = AddIndent();
-                classBlockContext.WriteInternalProperties(library);
-                classBlockContext.WriteClassConstructor(library);
-                classBlockContext.WriteSingletonInstanceProperty(library);
+                classBlockContext.WriteClassConstructor();
+                classBlockContext.WriteSingletonInstanceProperty();
                 classBlockContext.WriteLibraryInterfaceImplementation();
-                classBlockContext.WriteMethods(library);
+                classBlockContext.WriteMethods();
                 classBlockContext.WriteCqlTupleMetadataProperties();
             }
             IndentedTextWriter.WriteLine("}");
         }
 
-        private void WriteSingletonInstanceProperty(Library library)
+        private void WriteSingletonInstanceProperty()
         {
-            if (library.contexts == null)
-                IndentedTextWriter.WriteLine($$"""
+            IndentedTextWriter.WriteLine($$"""
                                            public static {{ClassName}} Instance { get; } = new();
 
                                            """);
         }
 
-        private void WriteInternalProperties(Library library)
+        private void WriteClassConstructor()
         {
-            if(library.contexts != null)
-            {
-                if (library.identifier.id.StartsWith("Cache"))
-                {
-                    IndentedTextWriter.WriteLine($$"""
-                                           internal CqlContext context;
-                                           """);
-                }
-                else
-                {
-                    IndentedTextWriter.WriteLine($$"""
-                                           internal CqlContext context;
-                                           internal {{library}} cache;
+            IndentedTextWriter.WriteLine($$"""
+                                           private {{ClassName}}() {}
 
                                            """);
-                }
-            }
-        }
-
-        private void WriteClassConstructor(Library library)
-        {
-            if (library.contexts != null)
-            {
-                if (library.identifier.id.StartsWith("Cache"))
-                {
-                    IndentedTextWriter.WriteLine($$"""
-                                           public {{ClassName}}(CqlContext context) {
-                                                 this.context = context ?? throw new ArgumentNullException(nameof(context));
-                                           }
-
-                                           """);
-                }
-                else
-                {
-                    IndentedTextWriter.WriteLine($$"""
-                                           public {{ClassName}}(CqlContext context, Cache_2025_1_0 cache) {
-                                                 this.context = context ?? throw new ArgumentNullException(nameof(context));
-                                                 this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
-                                           }
-
-                                           """);
-                }
-            }
-
-
         }
     }
 
@@ -403,7 +360,7 @@ internal partial class LibrarySetCSharpCodeGenerator
 
         private IndentedTextWriter tw => LibraryWriter.IndentedTextWriter;
 
-        public void WriteDefinition(Library library)
+        public void WriteDefinition()
         {
             var name = CqlDefinition.Name;
             string quotedName = name.QuoteString();
@@ -528,7 +485,7 @@ internal partial class LibrarySetCSharpCodeGenerator
                 ? functionDef.OriginalParameterNames
                 : null;
 
-            var definitionWithBody = definitionToCSharpCodeProcessor.ProcessDefinition(transformedLambda, methodName, specifiers: "public", library, originalParameterNames);
+            var definitionWithBody = definitionToCSharpCodeProcessor.ProcessDefinition(transformedLambda, methodName, specifiers: "public", originalParameterNames);
             tw.WriteLine(definitionWithBody);
         }
 
