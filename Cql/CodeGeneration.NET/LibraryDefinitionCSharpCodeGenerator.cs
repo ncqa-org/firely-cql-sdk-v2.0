@@ -117,6 +117,10 @@ namespace Hl7.Cql.CodeGeneration.NET
             var target = targetName == LibraryName
                              ? "this"
                              : $"{IdentifierNormalizer.Normalize(targetName)}.Instance";
+
+            if (targetName.StartsWith("Cache") && target.Contains(".Instance"))
+                target = "cache";
+
             var member = IdentifierNormalizer.Normalize(memberName);
             return $"{target}.{member}";
         }
@@ -531,8 +535,8 @@ namespace Hl7.Cql.CodeGeneration.NET
             }).ToList();
 
             // inserts the context parameter in the start of the lambda expression
-            //if (Indent == 0)
-                //parameters.Insert(0, "CqlContext context");
+            if (Indent == 0)
+                parameters.Insert(0, "CqlContext context");
 
             var lambdaParameters = $"({string.Join(", ", parameters)})";
             lambdaSb.Append(lambdaParameters);
@@ -579,7 +583,7 @@ namespace Hl7.Cql.CodeGeneration.NET
             Library library,
             IReadOnlyDictionary<string, string>? originalParameterNames = null)
         {
-            Console.WriteLine($"TEST:: Processing function {library}...");
+            //Console.WriteLine($"TEST:: Processing function {library}...");
             var funcSb = new StringBuilder();
 
             funcSb.Append(specifiers + " ");
