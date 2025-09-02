@@ -145,6 +145,19 @@ internal partial class LibrarySetCSharpCodeGenerator
         private CqlVersionedLibraryIdentifier LibraryVersionedIdentifier => Library.VersionedLibraryIdentifier!;
         public string LibraryName { get; } = Library.VersionedLibraryIdentifier;
         private string ClassName { get; } = IdentifierNormalizer.Normalize(Library.VersionedLibraryIdentifier);
+        private string? IncludedCacheClassName
+        {
+            get
+            {
+                var cacheInclude = Library.includes?
+                    .FirstOrDefault(i => i.libraryName != null && i.libraryName.StartsWith("Cache"));
+                if (cacheInclude != null)
+                {
+                    return IdentifierNormalizer.Normalize(cacheInclude.VersionedLibraryIdentifier);
+                }
+                return null;
+            }
+        }
 
         public LibraryWriter AddIndent(int addIndent = 1)
         {
@@ -350,8 +363,9 @@ internal partial class LibrarySetCSharpCodeGenerator
         {
             if(library.contexts != null)
             {
-                //TODO: fix later - temp hotfix for LDM and ENP which does not contain Cache in its library
-                if (library.identifier.id.StartsWith("Cache") || library.identifier.id.StartsWith("ENP") || library.identifier.id.StartsWith("LDM"))
+                bool isLibraryWithCache = library.identifier.id.StartsWith("Cache") || (library.includes != null && !library.includes.Any(i => i.libraryName != null && i.libraryName.StartsWith("Cache")));
+
+                if (isLibraryWithCache)
                 {
                     IndentedTextWriter.WriteLine($$"""
                                            internal CqlContext context;
@@ -361,7 +375,7 @@ internal partial class LibrarySetCSharpCodeGenerator
                 {
                     IndentedTextWriter.WriteLine($$"""
                                            internal CqlContext context;
-                                           internal Cache_2025_1_0 cache;
+                                           internal {{IncludedCacheClassName}} cache;
 
                                            """);
                 }
@@ -372,8 +386,9 @@ internal partial class LibrarySetCSharpCodeGenerator
         {
             if (library.contexts != null)
             {
-                //TODO: fix later - temp hotfix for LDM and ENP which does not contain Cache in its library
-                if (library.identifier.id.StartsWith("Cache") || library.identifier.id.StartsWith("ENP") || library.identifier.id.StartsWith("LDM"))
+                bool isLibraryWithCache = library.identifier.id.StartsWith("Cache") || (library.includes != null && !library.includes.Any(i => i.libraryName != null && i.libraryName.StartsWith("Cache")));
+
+                if (isLibraryWithCache)
                 {
                     IndentedTextWriter.WriteLine($$"""
                                            public {{ClassName}}(CqlContext context) {
@@ -385,7 +400,7 @@ internal partial class LibrarySetCSharpCodeGenerator
                 else
                 {
                     IndentedTextWriter.WriteLine($$"""
-                                           public {{ClassName}}(CqlContext context, Cache_2025_1_0 cache) {
+                                           public {{ClassName}}(CqlContext context, {{IncludedCacheClassName}} cache) {
                                                  this.context = context ?? throw new ArgumentNullException(nameof(context));
                                                  this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
                                            }
