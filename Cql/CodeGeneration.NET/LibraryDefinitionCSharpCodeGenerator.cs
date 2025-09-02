@@ -11,6 +11,7 @@ using Hl7.Cql.Abstractions.Infrastructure;
 using Hl7.Cql.Compiler;
 using Hl7.Cql.Runtime;
 using Hl7.Cql.Elm;
+using System.Linq.Expressions;
 
 namespace Hl7.Cql.CodeGeneration.NET
 {
@@ -583,7 +584,6 @@ namespace Hl7.Cql.CodeGeneration.NET
             Library library,
             IReadOnlyDictionary<string, string>? originalParameterNames = null)
         {
-            //Console.WriteLine($"TEST:: Processing function {library}...");
             var funcSb = new StringBuilder();
 
             funcSb.Append(specifiers + " ");

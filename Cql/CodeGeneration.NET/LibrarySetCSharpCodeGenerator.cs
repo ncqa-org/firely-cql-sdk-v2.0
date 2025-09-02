@@ -341,6 +341,7 @@ internal partial class LibrarySetCSharpCodeGenerator
             {
                 var classBlockContext = AddIndent();
                 classBlockContext.WriteInternalProperties(library);
+                classBlockContext.WriteLazyProperties(library);
                 classBlockContext.WriteClassConstructor(library);
                 classBlockContext.WriteSingletonInstanceProperty(library);
                 classBlockContext.WriteLibraryInterfaceImplementation();
@@ -361,7 +362,7 @@ internal partial class LibrarySetCSharpCodeGenerator
 
         private void WriteInternalProperties(Library library)
         {
-            if(library.contexts != null)
+            if (library.contexts != null)
             {
                 bool isLibraryWithCache = library.identifier.id.StartsWith("Cache") || (library.includes != null && !library.includes.Any(i => i.libraryName != null && i.libraryName.StartsWith("Cache")));
 
@@ -382,6 +383,34 @@ internal partial class LibrarySetCSharpCodeGenerator
             }
         }
 
+        private void WriteLazyProperties(Library library)
+        {
+            if (library.contexts != null)
+            {
+                IndentedTextWriter.WriteLine($$"""
+                                               #region Cached values
+                                               """);
+
+                foreach (var lambdaDef in Definitions.OfType<CqlLambdaDefinition>())
+                {
+                    var lambdaExpression = lambdaDef.LambdaExpression;
+                    var methodName = IdentifierNormalizer.Normalize(lambdaDef.Name);
+                    bool isCachableDefine = isDefinition(lambdaExpression);
+                    if (isCachableDefine)
+                    {
+                        var cachedValueName = DefinitionCacheKeyForMethod(methodName!);
+                        var returnType = LibrarySetWriter.TypeToCSharpConverter.ToCSharp(lambdaExpression.ReturnType);
+                        IndentedTextWriter.WriteLine($$"""
+                                               internal Lazy<{{returnType}}> {{cachedValueName}};
+                                               """);
+                    }
+                }
+                IndentedTextWriter.WriteLine($$"""
+                                               #endregion
+                                               """);
+            }
+        }
+
         private void WriteClassConstructor(Library library)
         {
             if (library.contexts != null)
@@ -393,8 +422,7 @@ internal partial class LibrarySetCSharpCodeGenerator
                     IndentedTextWriter.WriteLine($$"""
                                            public {{ClassName}}(CqlContext context) {
                                                  this.context = context ?? throw new ArgumentNullException(nameof(context));
-                                           }
-
+                                                 
                                            """);
                 }
                 else
@@ -403,14 +431,33 @@ internal partial class LibrarySetCSharpCodeGenerator
                                            public {{ClassName}}(CqlContext context, {{IncludedCacheClassName}} cache) {
                                                  this.context = context ?? throw new ArgumentNullException(nameof(context));
                                                  this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
-                                           }
-
+                                          
                                            """);
                 }
+
+                foreach (var lambdaDef in Definitions.OfType<CqlLambdaDefinition>())
+                {
+                    var lambdaExpression = lambdaDef.LambdaExpression;
+                    var methodName = IdentifierNormalizer.Normalize(lambdaDef.Name);
+                    bool isCachableDefine = isDefinition(lambdaExpression);
+                    if (isCachableDefine)
+                    {
+                        var cachedValueName = DefinitionCacheKeyForMethod(methodName!);
+                        var returnType = LibrarySetWriter.TypeToCSharpConverter.ToCSharp(lambdaExpression.ReturnType);
+                        var privateMethodName = methodName + "_Value";
+                        IndentedTextWriter.WriteLine($$"""
+                                                 {{cachedValueName}} = new Lazy<{{returnType}}>(() => this.{{privateMethodName}}(context));
+                                           """);
+                    }
+                }
+
+                IndentedTextWriter.WriteLine($$"""
+                                           }
+                                          
+                                           """);
             }
-
-
         }
+
     }
 
     private record DefinitionWriter
@@ -524,7 +571,6 @@ internal partial class LibrarySetCSharpCodeGenerator
                         tw.WriteLine($"[CqlTag({tag.Name.QuoteString()}, {tagValue.QuoteString()})]");
 
             VariableNameGenerator variableNameGenerator = new([], postfix: "_");
-
             var visitedBody = Transform(
                 ld.LambdaExpression.Body,
                 new RedundantCastsTransformer(),
@@ -548,8 +594,30 @@ internal partial class LibrarySetCSharpCodeGenerator
                 ? functionDef.OriginalParameterNames
                 : null;
 
-            var definitionWithBody = definitionToCSharpCodeProcessor.ProcessDefinition(transformedLambda, methodName, specifiers: "public", library, originalParameterNames);
-            tw.WriteLine(definitionWithBody);
+            var lambdaExpression = ld.LambdaExpression;
+            bool isCachableDefine = isDefinition(lambdaExpression);
+            if (library.contexts != null && isCachableDefine)
+            {
+                var cachedMethodName = methodName+"_Value";
+                var cachedDefinitionWithBody = definitionToCSharpCodeProcessor.ProcessDefinition(transformedLambda, cachedMethodName, specifiers: "private", library, originalParameterNames);
+                tw.WriteLine(cachedDefinitionWithBody);
+
+                var funcSb = new StringBuilder();
+                funcSb.Append("public ");
+                funcSb.Append(LibraryWriter.LibrarySetWriter.TypeToCSharpConverter.ToCSharp(transformedLambda.ReturnType) + " ");
+                //TODO: Fix context parameter for public methods - should not require context at all
+                //however, currently the initial lambdas that are being written to CS are already adding a context in its expression body
+                funcSb.Append(methodName + "(CqlContext context = null) =>");
+                funcSb.AppendLine();
+                funcSb.Append("    __" + methodName + "?.Value;");
+                funcSb.AppendLine();
+                tw.WriteLine(funcSb.ToString());
+            }
+            else
+            {
+                var definitionWithBody = definitionToCSharpCodeProcessor.ProcessDefinition(transformedLambda, methodName, specifiers: "public", library, originalParameterNames);
+                tw.WriteLine(definitionWithBody);
+            }
         }
 
         private static Expression Transform(Expression body, params ExpressionVisitor[] visitors)
@@ -559,5 +627,15 @@ internal partial class LibrarySetCSharpCodeGenerator
         }
     }
 
+    private static bool isDefinition(LambdaExpression lambdaExp) =>
+        lambdaExp.Parameters.Count == 1
+        && lambdaExp.Parameters[0].Type == typeof(CqlContext);
+
+    private static string DefinitionCacheKeyForMethod(string methodName)
+    {
+        if (methodName[0] == '@')
+            return "__" + methodName.Substring(1);
+        else return "__" + methodName;
+    }
     #endregion Nested Types
 }
